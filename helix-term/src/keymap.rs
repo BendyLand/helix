@@ -53,7 +53,7 @@ impl KeyTrieNode {
     }
 
     /// Merge another Node in. Leaves and subnodes from the other node replace
-    /// corresponding keyevent in self, except when both other and self have
+   /// corresponding keyevent in self, except when both other and self have
     /// subnodes for same key. In that case the merge is recursive.
     pub fn merge(&mut self, mut other: Self) {
         for (key, trie) in std::mem::take(&mut other.map) {
@@ -293,6 +293,8 @@ pub struct Keymaps {
     state: Vec<KeyEvent>,
     /// Stores the sticky node if one is activated.
     pub sticky: Option<KeyTrieNode>,
+    /// Insert mode sequence tracker
+    insert_buffer: Option<KeyEvent>,
 }
 
 impl Keymaps {
@@ -301,6 +303,7 @@ impl Keymaps {
             map,
             state: Vec::new(),
             sticky: None,
+            insert_buffer: None,
         }
     }
 
@@ -330,6 +333,32 @@ impl Keymaps {
     /// key cancels pending keystrokes. If there are no pending keystrokes but a
     /// sticky node is in use, it will be cleared.
     pub fn get(&mut self, mode: Mode, key: KeyEvent) -> KeymapResult {
+        // Hardcoded fix to allow dual-key combo to return to Normal mode
+        use helix_view::input::KeyCode;
+        if mode == Mode::Insert || mode == Mode::Select {
+            if let Some(held) = self.insert_buffer.take() {
+                if held.code == KeyCode::Char('j') && key.code == KeyCode::Char('k') {
+                    // Matched 'jk' → normal mode
+                    return KeymapResult::Matched(MappableCommand::normal_mode);
+                }
+                else {
+                    if key.code == KeyCode::Char('j') {
+                        // Directly let it fall through to NotFound → types normally
+                        return KeymapResult::NotFound;
+                    }
+                    else {
+                        return self.get(mode, key);  // normal redispatch for non-'j' keys
+                    }
+                }
+            }
+
+            if key.code == KeyCode::Char('j') {
+                // Hold first 'j'
+                self.insert_buffer = Some(key);
+                return KeymapResult::Pending(KeyTrieNode::default());
+            }
+        }
+
         // TODO: remove the sticky part and look up manually
         let keymaps = &*self.map();
         let keymap = &keymaps[&mode];
