@@ -16,6 +16,17 @@
 
 </div>
 
+> About This Fork
+>
+> This is a personal fork of Helix that adds a minimal multi-key insert mode escape system.
+>
+> Specifically:
+>  - Typing 'j' followed by 'k' exits insert or select mode and returns to normal mode.
+>  - Typing any other key after j simply passes through as normal input (including another j).
+>
+>  This is a lightweight personal modification, not aligned with upstream goals, and not intended as a general replacement.
+>  I made this fork to improve my personal editing workflow by enabling a “home row” normal mode escape, but I do not plan to open a pull request upstream.
+
 ![Screenshot](./screenshot.png)
 
 A [Kakoune](https://github.com/mawww/kakoune) / [Neovim](https://github.com/neovim/neovim) inspired editor, written in Rust.
