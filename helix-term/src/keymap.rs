@@ -335,7 +335,7 @@ impl Keymaps {
     pub fn get(&mut self, mode: Mode, key: KeyEvent) -> KeymapResult {
         // Hardcoded fix to allow dual-key combo to return to Normal mode
         use helix_view::input::KeyCode;
-        if mode == Mode::Insert || mode == Mode::Select {
+        if mode == Mode::Insert {
             if let Some(held) = self.insert_buffer.take() {
                 if held.code == KeyCode::Char('j') && key.code == KeyCode::Char('k') {
                     // Matched 'jk' → normal mode
