@@ -21,7 +21,7 @@
 > This is a personal fork of Helix that adds a minimal multi-key insert mode escape system.
 >
 > Specifically:
->  - Typing 'j' followed by 'k' exits insert or select mode and returns to normal mode.
+>  - Typing 'j' followed by 'k' exits insert mode and returns to normal mode.
 >  - Typing any other key after j simply passes through as normal input (including another j).
 >
 >  This is a lightweight personal modification, not aligned with upstream goals, and not intended as a general replacement.
