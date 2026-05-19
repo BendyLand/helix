@@ -212,7 +212,6 @@ fn get_grammar_configs() -> Result<Vec<GrammarConfiguration>> {
             .collect(),
         None => config.grammar,
     };
-
     Ok(grammars)
 }
 
@@ -351,12 +350,9 @@ fn fetch_grammar(grammar: GrammarConfiguration) -> Result<FetchStatus> {
     else {
         return Ok(FetchStatus::NonGit);
     };
-
     let repo = VendoredGrammar::new(&grammar.grammar_id);
-
     // WARN: Must init before other operations are done.
     repo.init(&remote)?;
-
     if repo.revision().is_some_and(|rev| rev == revision) {
         return Ok(FetchStatus::GitUpToDate);
     }

@@ -30,19 +30,32 @@ pub fn initialize_log_file(specified_file: Option<PathBuf>) {
 
 /// A list of runtime directories from highest to lowest priority
 ///
-/// The priority is:
+/// The (custom) priority is:
 ///
-/// 1. sibling directory to `CARGO_MANIFEST_DIR` (if environment variable is set)
-/// 2. subdirectory of user config directory (always included)
-/// 3. `HELIX_RUNTIME` (if environment variable is set)
+/// 1. `HELIX_RUNTIME` or `NIX_HELIX_RUNTIME` environment variable overrides.
+///    If specified, this short-circuits the entire function and returns ONLY
+///    the targeted path, bypassing all default system and workspace lookups.
+/// 2. Sibling directory to `CARGO_MANIFEST_DIR` (if environment variable is set)
+/// 3. Subdirectory of the user config directory (`~/.config/helix/runtime`)
 /// 4. `HELIX_DEFAULT_RUNTIME` (if environment variable is set *at build time*)
-/// 5. subdirectory of path to helix executable (always included)
+/// 5. Subdirectory of the path to the helix executable
 ///
-/// Postcondition: returns at least two paths (they might not exist).
+/// Postcondition: Returns a vector containing the explicit path override if provided, 
+/// otherwise falls back to a cascading list of standard system lookup paths.
 fn prioritize_runtime_dirs() -> Vec<PathBuf> {
     const RT_DIR: &str = "runtime";
-    // Adding higher priority first
+
+    // Explicit User Overrides (Highest Priority)
+    // If the user explicitly provided a runtime directory via the environment, 
+    // use ONLY that path and bypass all default lookups.
+    if let Ok(dir) = std::env::var("NIX_HELIX_RUNTIME").or_else(|_| std::env::var("HELIX_RUNTIME")) {
+        let dir = path::expand_tilde(Path::new(&dir));
+        return vec![path::normalize(dir)];
+    }
+
     let mut rt_dirs = Vec::new();
+
+    // Cargo Workspace Development Path
     if let Ok(dir) = std::env::var("CARGO_MANIFEST_DIR") {
         // this is the directory of the crate being run by cargo, we need the workspace path so we take the parent
         let path = PathBuf::from(dir).parent().unwrap().join(RT_DIR);
@@ -50,13 +63,9 @@ fn prioritize_runtime_dirs() -> Vec<PathBuf> {
         rt_dirs.push(path);
     }
 
+    // Standard User Configuration Path (~/.config/helix/runtime)
     let conf_rt_dir = config_dir().join(RT_DIR);
     rt_dirs.push(conf_rt_dir);
-
-    if let Ok(dir) = std::env::var("HELIX_RUNTIME") {
-        let dir = path::expand_tilde(Path::new(&dir));
-        rt_dirs.push(path::normalize(dir));
-    }
 
     // If this variable is set during build time, it will always be included
     // in the lookup list. This allows downstream packagers to set a fallback
